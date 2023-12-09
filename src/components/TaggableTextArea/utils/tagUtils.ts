@@ -20,7 +20,6 @@ export const placeTagElement = (
   spanElement.setAttribute(TAG_LABEL_ATTR, label);
   spanElement.contentEditable = 'false';
   spanElement.draggable = true;
-
   const buttonElement = document.createElement('button');
   buttonElement.setAttribute('data-tag-action', 'remove');
 
@@ -40,6 +39,8 @@ export const placeTagElement = (
     const range = selection.getRangeAt(0);
 
     range.insertNode(spanElement);
+    range.setStartAfter(spanElement);
+    range.collapse(true);
   }
 
   // Set cursor position after tag

@@ -76,44 +76,42 @@ export const saveCursorPosition = (element: HTMLElement) => {
  * @param {HTMLElement} element - The HTML element to restore the cursor position in.
  * @param {number} cursorPosition - The cursor position to restore.
  */
-export const restoreCursorPosition = (
-  element: HTMLElement,
-  cursorPosition: number
-) => {
-  const range = document.createRange();
+export const restoreCursorPosition = (element: HTMLElement, cursorPosition: number) => {
   const selection = window.getSelection();
+  if (!selection || !element) return;
 
-  if (selection && element.childNodes.length > 0) {
-    range.setStart(element.childNodes[0], 0);
-    range.collapse(true);
+  let currentPos = 0;
+  let nodeFound = false;
 
-    const { childNodes } = element;
-    let nodeIndex = 0;
-    let charIndex = cursorPosition;
-    let foundPosition = false;
+  const recursiveSearch = (nodes) => {
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodeFound) return;
 
-    while (!foundPosition && nodeIndex < childNodes.length) {
-      const childNode = childNodes[nodeIndex];
-      const { length } = childNode.textContent || '';
+      const node = nodes[i];
+      let count = 0;
 
-      if (
-        charIndex >= 0 &&
-        charIndex <= length &&
-        childNode.nodeName === '#text'
-      ) {
-        range.setStart(childNode, charIndex);
-        foundPosition = true;
-      } else if (charIndex > length) {
-        charIndex -= length;
-        nodeIndex++;
+      if (node.nodeType === Node.TEXT_NODE) {
+        count = node.textContent.length;
+      } else if (node.nodeName === 'BR') {
+        count = 1; // Asumme, että BR on yksi merkki pitkä
       } else {
-        foundPosition = true;
+        // Jos solmulla on lapsia, jatka rekursiota
+        recursiveSearch(node.childNodes);
+      }
+
+      if (currentPos + count >= cursorPosition) {
+        const range = document.createRange();
+        range.setStart(node, cursorPosition - currentPos);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        nodeFound = true; // Löysimme solmun, joten ei tarvitse jatkaa
+        return;
+      } else {
+        currentPos += count;
       }
     }
+  };
 
-    if (!foundPosition) range.setStart(childNodes[0], 0);
-
-    selection.removeAllRanges();
-    selection.addRange(range);
-  }
+  recursiveSearch(element.childNodes);
 };
