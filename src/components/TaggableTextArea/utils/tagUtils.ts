@@ -44,5 +44,5 @@ export const placeTagElement = (
   }
 
   // Set cursor position after tag
-  restoreCursorPosition(elementRef.current, (cursorPosition ?? 0) + 0.5);
+  restoreCursorPosition(elementRef.current, (cursorPosition ?? 0) + 0.5, spanElement);
 };

@@ -5,8 +5,8 @@
  * @returns {boolean} - Indicates if the cursor is inside the provided HTML node.
  */
 export const isCursorInNode = (
-  selection: Selection | null,
-  node: HTMLElement | null
+    selection: Selection | null,
+    node: HTMLElement | null
 ) => {
   if (!selection || !node) return false;
 
@@ -27,8 +27,8 @@ export const isCursorInNode = (
  * @returns {Range | null} - The caret range or null if not found/supported.
  */
 export const getCaretRange = (
-  clientX: number,
-  clientY: number
+    clientX: number,
+    clientY: number
 ): Range | null => {
   let range: Range | null = null;
 
@@ -72,46 +72,83 @@ export const saveCursorPosition = (element: HTMLElement) => {
 };
 
 /**
+ * Finds the index of the first span element with a specific data-tag-id value.
+ * @param {NodeListOf<ChildNode>} childNodes - The list of child nodes to search through.
+ * @param {string} dataTagIdValue - The value of the data-tag-id to search for.
+ * @returns {number | null} - The index of the found span element, or null if not found.
+ */
+export const findSpanIndexByDataTagId = (
+    childNodes: NodeListOf<ChildNode>,
+    dataTagIdValue: string
+): number | null => {
+  for (let i = 0; i < childNodes.length; i++) {
+    const node = childNodes[i];
+    if (node.nodeType === Node.ELEMENT_NODE) { // Ensure it's an element
+      const element = node as HTMLElement; // Typecast to HTMLElement
+      if (element.tagName === 'SPAN' && element.dataset.tagId === dataTagIdValue) {
+        return i; // Found the span with matching data-tag-id
+      }
+    }
+  }
+  return null; // Not found
+};
+
+/**
  * Restores the cursor position within an HTML element.
  * @param {HTMLElement} element - The HTML element to restore the cursor position in.
  * @param {number} cursorPosition - The cursor position to restore.
+ * @param spanElement
  */
-export const restoreCursorPosition = (element: HTMLElement, cursorPosition: number) => {
+export const restoreCursorPosition = (
+    element: HTMLElement,
+    cursorPosition: number,
+    spanElement: HTMLElement
+) => {
+  const range = document.createRange();
   const selection = window.getSelection();
-  if (!selection || !element) return;
 
-  let currentPos = 0;
-  let nodeFound = false;
+  if (selection && element.childNodes.length > 0) {
+    range.setStart(element.childNodes[0], 0);
+    range.collapse(true);
 
-  const recursiveSearch = (nodes) => {
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodeFound) return;
+    const { childNodes } = element;
+    let nodeIndex = 0;
+    let charIndex = cursorPosition;
+    let foundPosition = false;
 
-      const node = nodes[i];
-      let count = 0;
+    while (!foundPosition && nodeIndex < childNodes.length) {
+      const childNode = childNodes[nodeIndex];
+      const { length } = childNode.textContent || '';
+      if (
+          charIndex >= 0 &&
+          charIndex <= length &&
+          childNode.nodeName === '#text'
+      ) {
+        const dataTagId = spanElement.dataset.tagId;
+        let index = null;
+        if(dataTagId) {
+          index = findSpanIndexByDataTagId(childNodes, dataTagId);
+        }
+        if (index !== null && index >= 0) {
+          // If index is valid, set the start at the span element
+          range.setStart(childNodes[index + 1], 0);
+        } else {
+          // If index is not valid, set the start at the current text node
+          range.setStart(childNode, charIndex);
+        }
 
-      if (node.nodeType === Node.TEXT_NODE) {
-        count = node.textContent.length;
-      } else if (node.nodeName === 'BR') {
-        count = 1; // Asumme, että BR on yksi merkki pitkä
+        foundPosition = true;
+      } else if (charIndex > length) {
+        charIndex -= length;
+        nodeIndex++;
       } else {
-        // Jos solmulla on lapsia, jatka rekursiota
-        recursiveSearch(node.childNodes);
-      }
-
-      if (currentPos + count >= cursorPosition) {
-        const range = document.createRange();
-        range.setStart(node, cursorPosition - currentPos);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        nodeFound = true; // Löysimme solmun, joten ei tarvitse jatkaa
-        return;
-      } else {
-        currentPos += count;
+        foundPosition = true;
       }
     }
-  };
 
-  recursiveSearch(element.childNodes);
+    if (!foundPosition) range.setStart(childNodes[0], 0);
+
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
 };
