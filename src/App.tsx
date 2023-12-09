@@ -24,13 +24,13 @@ function App() {
   return (
     <main className="">
       <div className="flex max-w-[40rem] flex-col rounded-md bg-white text-gray-700 shadow-2xl p-8 mx-auto mt-8">
-        <div className="mb-8 border border-gray-400">
+        <div className="mb-8 border border-gray-400 min-h-32">
           <TaggableTextArea
             ref={promptRef}
             value={value}
             onChange={setValue}
             availableTags={tags}
-            className="h-32 p-4"
+            className="min-h-32 p-4"
           />
 
           <div className="bg-gray-50 border-t border-gray-400 px-4 py-3">
