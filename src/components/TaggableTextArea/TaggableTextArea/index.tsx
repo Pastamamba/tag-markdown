@@ -210,6 +210,24 @@ const TaggableTextArea = forwardRef<HTMLDivElement, TaggableTextAreaProps>(
                 range.deleteContents();
                 range.insertNode(brElement);
 
+                const nextSibling = brElement.nextSibling;
+
+                if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE) {
+                    // This is a zero-width space
+                    const space = document.createTextNode('\u200B');
+
+                    // Ensure the BR element has a parent node before inserting
+                    if (brElement.parentNode) {
+                        brElement.parentNode.insertBefore(space, nextSibling);
+
+                        // Now set the cursor position after the space
+                        range.setStartAfter(space);
+                    }
+                } else {
+                    // If the next sibling is not a text node, just set the range to start after the BR element
+                    range.setStartAfter(brElement);
+                }
+
                 range.setStartAfter(brElement);
                 range.collapse(true);
                 selection.removeAllRanges();
