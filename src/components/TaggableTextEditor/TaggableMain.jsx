@@ -61,7 +61,6 @@ export const TaggableMain = () => {
                         </Button>
                     ))}
                 </div>
-
                 {/* Displaying the current text value */}
                 <h3 className="text-xl font-semibold mb-4 mt-8">Result</h3>
                 <div className="mt-2">
